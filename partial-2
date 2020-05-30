@@ -1,0 +1,697 @@
+
+//works right, have to add output required
+
+//============================================================================
+// Name        : Project.cpp
+// Author      : Vagner Machado QCIC 23651127
+// Version     : One and only!
+// Copyright   : Free to use for legal purposes.
+// Description : Job Scheduler - Project 3 - CSC 340 - Professor Svadlenka
+//============================================================================
+
+#include <iostream>
+#include <fstream>
+#include <sstream>
+
+//============================================================================
+/*
+ * Process class
+ * Defines instance data and methods needed to instantiate and manipulate Processes
+ */
+
+
+
+class Process
+{
+private:
+	//instance data
+public:
+	std::string processNumber;
+	int burstTime;
+	int timeLeft;
+	int priority;
+	int waiting;
+	int turnaround;
+	bool running;
+	int arrival;
+	Process *next;
+
+	/*
+	 * Process constructor
+	 * Uses the data passed as paramter to instantiate
+	 * a Process to be added to the ready queue.
+	 */
+	Process(std::string pn, int pr, int bu, int arr)
+	{
+		arrival = arr;
+		processNumber = pn;
+		burstTime = bu;
+		timeLeft = bu;
+		priority = pr;
+		waiting = 0;
+		turnaround = 0;
+		running = false;
+		next = NULL;
+	}
+
+	/*
+	 * toString(): Prints the instance data for the Process
+	 */
+	void toString()
+	{
+		std::string status = running == false ? "false" : "true";
+		std::cout << "Process # ........ " << processNumber << "\n"
+				<< "Arrival Time ..... " << arrival << "\n"
+				<< "Burst Time ....... " << burstTime << "\n"
+				<< "Time Left ........ " << timeLeft << "\n"
+				<< "Priority ......... " << priority << "\n"
+				<< "Waiting Time ..... " << waiting << "\n"
+				<< "Turnaround Time .. " << turnaround << "\n"
+				<< "Running Status ... " << status << "\n\n";
+	}
+}; //end of Process class
+
+//===========================================================================
+
+/*
+ * Linked List class
+ * Defines the instance data and methods needed to create a linked list
+ * to serve as a Process ready queue.
+ */
+
+class LinkedList
+{
+private:
+	//instance data
+public:
+	Process *head;
+	Process *tail;
+
+	/*
+	 * LinkedList constructor
+	 * Instantiates a linked lists with head and tail having NULL values.
+	 */
+	LinkedList()
+	{
+		head = NULL;
+		tail = NULL;
+	}
+
+	/*
+	 * addProcess: adds the Process passed as parameter to the
+	 * linked list. Process is added either to:
+	 * 		. empty linked list
+	 * 		.not empty linked list
+	 *
+	 * Those two scenarios are analyzed before adding Process
+	 * NULL processes are rejected.
+	 */
+	void addProcessToTail(Process * p)
+	{
+		if (p == NULL)
+			return;
+		if (head == NULL)
+		{
+			head = tail = p;
+		}
+		else
+		{
+			tail->next = p;
+			tail = p;
+		}
+	}
+
+	/*
+	 * findLargestPriority - scans through the linked list to
+	 * report the value of the largest priority process in the linked list
+	 *  returns the largest priority or -1 case the linked list is empty.
+	 */
+	int findLargestPriorityProcess()
+	{
+		if(head == NULL)
+			return -1;
+		int largest = 0;
+		Process * traverse = head;
+		while(traverse != NULL)
+		{
+			if(traverse->priority > largest)
+				largest = traverse->priority;
+			traverse = traverse->next;
+		}
+		return largest;
+	}
+	/*
+	 * removeProcessbyNumber: removes a process in the linked list by processNumber
+	 * A Process to be deleted can be either in
+	 * 		. head
+	 * 		. tail
+	 * 		. middle
+	 *
+	 * 	Those three cases are inspected to perform a deletion.
+	 * 	The process name must match in order to delete (p1, p2, ...)
+	 * 
+	 deleteProcess: indicates if process removed must also be deleted.
+	 * So processe removed from ready queue can 
+	 * have a false flag for deletePrecess and return
+	 * removed process which can be added to another queue.
+	 * 
+	 * Then when time comes, deleted Processes from terminated
+	 * queue can call this method with true flag
+	 */
+	Process *removeProcessByNumber(std::string procNum, bool deleteProcess)
+	{
+		Process *traverse = head;
+		Process *previous = head;
+
+		//traverse the linked list
+		while (traverse != NULL)
+		{
+			//case a match
+			if ((procNum.compare(traverse->processNumber)) == 0)
+			{
+				//case match in the head
+				if (traverse == head)
+				{
+					if (head->next != NULL)
+						head = head->next;
+					else
+						head = tail = NULL;
+				}
+				//case match in the tail
+				else if (traverse == tail)
+				{
+					tail = previous;
+					tail->next = NULL;
+				}
+				//case match is in the middle
+				else
+					previous->next = traverse->next;
+
+				//free memory
+				if (deleteProcess)
+				{
+					delete traverse;
+					return NULL;
+				}
+				else
+				{
+					traverse->next = NULL; //took me while to realize this bug.
+					//before not having next = null, my terminated queue was
+					//printing all the processes after traverse due to next field being not nullified.
+					return traverse;
+				}
+			}
+			//otherwise step forward
+			else
+			{
+				if (traverse != head)
+					previous = previous->next;
+				traverse = traverse->next;
+			}
+		}
+		return NULL; //case not a match for parameter is found
+	}
+
+	/*
+	 * removeProcessByPriority: removes a process in the linked list by priority
+	 * A Process to be deleted can be either in
+	 * 		. head
+	 * 		. tail
+	 * 		. middle
+	 *
+	 * 	Those three cases are inspected to perform a deletion.
+	 * 	The process priority must match in order to delete (9, 8, ...)
+	 * 
+	 * deleteProcess: indicates if process removed must also be deleted.
+	 * So processe removed from ready queue can 
+	 * have a false flag for deletePrecess and return
+	 * removed process which can be added to another queue.
+	 * 
+	 * Then when time comes, deleted Processes from terminated
+	 * queue can call this method with true flag
+	 */
+	Process * removeProcessByPriority(int prio, bool deleteProcess)
+	{
+		Process *traverse = head;
+		Process *previous = head;
+
+		//traverse the linked list
+		while (traverse != NULL)
+		{
+			//case a match
+			if (prio == traverse->priority)
+			{
+				//case match in the head
+				if (traverse == head)
+				{
+					if (head->next != NULL)
+						head = head->next;
+					else
+						head = tail = NULL;
+				}
+				//case match in the tail
+				else if (traverse == tail)
+				{
+					tail = previous;
+					tail->next = NULL;
+				}
+				//case match is in the middle
+				else
+					previous->next = traverse->next;
+
+				//free memory
+				if (deleteProcess)
+				{
+					delete traverse;
+					return NULL;
+				}
+				else
+				{
+					traverse->next = NULL; //took me while to realize this bug.
+					//before not having next = null, my terminated queue was
+					//printing all the processes after traverse due to next field being not nullified.
+					return traverse;
+				}
+			}
+			//otherwise step forward
+			else
+			{
+				if (traverse != head)
+					previous = previous->next; //control trailing pointer
+				traverse = traverse->next;
+			}
+		}
+		return NULL; //case not a match for parameter is found
+	}
+
+	Process * removeHeadProcess()
+	{
+		if(head == NULL) //none
+			return NULL;
+		else
+		{
+			Process * proc = head;
+			if(head->next == NULL)
+				head = tail = NULL;
+			else
+				head = head->next;
+			proc->next = NULL;
+			return proc;
+		}
+	}
+
+	/*
+	 * toString(): Prints the Processes in the linked list
+	 * by calling the toString defined in class Process
+	 */
+	void toString()
+	{
+		Process *traverse = head;
+		if (head == NULL)
+		{
+			std::cout << "Linked List is Empty\n\n";
+			return;
+		}
+		while (traverse != NULL)
+		{
+			traverse->toString();
+			traverse = traverse->next;
+		}
+		//std::cout << "\n\n";
+	}
+
+}; //end of LinkedList class
+
+/*
+ * RunningProcess
+ * Used to track running process or processes case we have round robin.
+ */
+class RunningProcess
+{
+	std::string name;
+	int priority;
+	RunningProcess(std::string n, int p)
+	{
+		name = n;
+		priority = p;
+	}
+};
+//==========================================================================
+
+//============ AUXILIARY FUNCTION FOR THE MAIN CLASS  ======================
+
+/*
+ * deletes the first line of input file.
+ * Gets called when a new process is instantiated with
+ * the data contained in the first line of the Process data file.
+ */
+void deleteFirstLineFromFile(std::string data)
+{
+	//read form file
+	std::fstream file;
+	file.open(data, std::fstream::in);
+	std::string line = "";
+	std::string rest = "";
+
+	//ignores processing the first line in the file.
+	std::getline(file, line);
+
+	//reads the remainder lines and overwrites the file
+	while (std::getline(file, line))
+	{
+		if (line.compare("") != 0) //case cursor ends at first spot in blank line
+			rest += line + "\n";
+		line = "";
+		//appends if not the first line to update file
+	}
+	file.close();
+	file.open(data, std::fstream::out);
+	file << rest;
+	file.close();
+}
+
+/*
+ * Reads the first line in the data.txt file and verifies if
+ * the arrival time is same the program clock. If so, it
+ * instantiates a new Process and returns it. Otherwise,
+ * it returns NULL.
+ */
+Process *readIncomingProcessFromFile(int time, std::string data)
+{
+	//read form file
+	std::fstream file;
+	file.open(data, std::fstream::in);
+	std::string word = "";
+	if (file.is_open())
+	{
+		//test for blank file i.e all input was processed
+		getline(file, word);
+		if (word.compare("") == 0)
+			return NULL;
+	}
+	else
+	{
+		std::cout << "Error opening process file";
+		return NULL;
+	}
+	file.close();
+
+	//if there is more lines of input
+	file.open(data, std::fstream::in);
+	word = "";
+	char c;
+
+	//array to store member data for Processes
+	std::string *input = new std::string[4];
+	int place = 0;
+	bool more = true;
+	if (file.is_open())
+	{
+		while (place < 4)
+		{
+			more = true;
+			//works on tab and newline delimiters, not carriage return - beware
+			while (more)
+			{
+				file.get(c);
+				if (c != '\t' && c != '\n')
+					word += c;
+				else
+				{
+					more = false;
+					input[place++] = word;
+					word = "";
+				}
+			}
+		}
+	}
+	//error opening the file
+	else
+		std::cout << "Error opening process file!";
+
+	//check if process arrival time is program clock time
+	file.close();
+	if (stoi(input[3]) == time) //if so return a Process with data read in
+	{
+		deleteFirstLineFromFile(data); //call method that deletes the first line of input with new Process
+		return new Process(input[0], stoi(input[1]), stoi(input[2]), stoi(input[3]));
+	}
+	else //otherwise return null i.e, set to arrive in the future.
+		return NULL;
+}
+
+void incrementTurnaroundAndWaitTime(LinkedList &readyQueue, LinkedList &runningProcess)
+{
+	Process * traverse = readyQueue.head;
+	while(traverse != NULL)
+	{
+		traverse->turnaround++;
+		traverse->waiting++;
+		traverse = traverse->next;
+	}
+	traverse = runningProcess.head;
+	while(traverse != NULL)
+	{
+		if(!traverse->running)
+			traverse->waiting++;
+		else
+			traverse->timeLeft--;
+		traverse->turnaround++;
+		traverse = traverse->next;
+	}
+}
+
+//==================================================================================
+/*
+ * main function
+ * Coded to function as a priority based preemptive scheduler with round robin algorithm
+ * for processes having the same priority. The quantum q for round robin is 10 units of time.
+ * 
+ * Reads in input file to instantiate processes and add them to ready queue, sets Process
+ * to run on CPU and manipulates the variables in each process as time counter increments.
+ * 
+ * When all processes are finished, displays the the turn around and wait times for
+ * each process in the ready queue.
+ */
+int main(int c, char ** arr)
+{
+
+	std::string fileName;				//input filename
+	std::string processTimeline = "";		//aggregator for a timeline option
+	std::string clockTimeline = "";     //aggregator for a timeline option
+	if(c == 1)
+	{
+		std::cout << "Input file needed";
+		return 0;
+	}
+	else
+	{
+		fileName = (arr[1]);
+		std::cout << "File Name is " << fileName;
+		//return 0;
+	}
+
+	LinkedList readyQueue;      // processes waiting to run
+	LinkedList terminatedQueue; // when process is done it is added here
+	LinkedList runningProcess;  //case round robin two processes
+	bool roundRobin = false;
+	int roundRobinTimer = 10;
+	bool CPU_busy = false;
+	int timeQuantum = 10;
+
+	for (int i = 0; i < 100; i++)
+	{
+		//std::cout << "\nTimer " << i;
+		bool newProcess = true;
+		int newProcessCount = 0;
+		while (newProcess)
+		{
+			Process * incomingProcess = readIncomingProcessFromFile(i, fileName);
+			if (incomingProcess == NULL)
+				newProcess = false;
+			else
+			{
+				//std::cout << "\nAdded processs to ready queue from file" << incomingProcess->processNumber;
+				readyQueue.addProcessToTail(incomingProcess);
+				newProcessCount++; //track if many processes came in at the same time
+			}
+		}
+		//get the largest priority of ready processes
+		int largestPriority = readyQueue.findLargestPriorityProcess();
+		//std::cout << "\nLargest priority " << largestPriority;
+		//if cpu is free and there is something to run
+		if(!CPU_busy && largestPriority != -1)
+		{
+			//std::cout << "\nCPU not busy, adding processes";
+			Process * incoming = readyQueue.removeProcessByPriority(largestPriority, false);
+			int numberOfRunningProcesses = 0;
+			//add processes with largestPriority to running Processes
+			while(incoming != NULL)
+			{
+				//std::cout << "\nAdded processs to running queue from file" << incoming->processNumber;
+				numberOfRunningProcesses++;
+				runningProcess.addProcessToTail(incoming);
+				incoming = readyQueue.removeProcessByPriority(largestPriority, false);
+			}
+			if(numberOfRunningProcesses > 1)
+			{
+			    //std::cout << "\nRound robin activated in CPU not busy section";
+				roundRobin = true;
+				roundRobinTimer = timeQuantum;
+			}
+			runningProcess.head->running = true;
+			CPU_busy = true;
+			//std::cout << "\nCPU made busy in CPU not buys section";
+		}
+		//CPU is busy so have to check if preempting will be needed
+		else if(CPU_busy && largestPriority != -1)
+		{
+			//std::cout << "\nInside CPU busy section";
+			//empty the running process queue
+			if(largestPriority > runningProcess.head->priority)
+			{
+				//std::cout << "\nAdmitted process has higher priority";
+				roundRobin = false;
+				//std::cout << "\nRound robin false in cpu busy section";
+				Process * runningToReady = runningProcess.removeHeadProcess();
+				while(runningToReady != NULL)
+				{
+					//std::cout << "\nRemoved from running queue and added to ready queue " << runningToReady->processNumber;
+					runningToReady->running = false;
+					readyQueue.addProcessToTail(runningToReady);
+					runningToReady = runningProcess.removeHeadProcess();
+				}
+
+				//admit the processes with largest priority
+				Process * incoming = readyQueue.removeProcessByPriority(largestPriority, false);
+				int numberOfRunningProcesses = 0;
+				//add processes with largestPriority to running Processes
+				while(incoming != NULL)
+				{
+					//std::cout << "\nAdmitting higher priority process to queue " << incoming->processNumber;
+					numberOfRunningProcesses++;
+					runningProcess.addProcessToTail(incoming);
+					incoming = readyQueue.removeProcessByPriority(largestPriority, false);
+				}
+				if(numberOfRunningProcesses > 1)
+				{
+					roundRobin = true;
+					roundRobinTimer = timeQuantum;
+				}
+				runningProcess.head->running = true;
+			    roundRobinTimer = timeQuantum;
+				CPU_busy = true;
+
+			}
+			else if(largestPriority == runningProcess.head->priority)
+			{
+				//std::cout << "\nLargest priority is same as running process ";
+				roundRobin = true;
+				//roundRobinTimer = timeQuantum;    ///maybe here set to time quantum only if there are two total.
+
+				//admit new processes with largest priority
+				Process * incoming = readyQueue.removeProcessByPriority(largestPriority, false);
+				//add processes with largestPriority to running Processes
+				while(incoming != NULL)
+				{
+					//std::cout << "\nAdmitted process to running queue " << incoming->processNumber;
+					runningProcess.addProcessToTail(incoming);
+					incoming = readyQueue.removeProcessByPriority(largestPriority, false);
+				}
+				runningProcess.head->running = true;
+				//roundRobinTimer = timeQuantum;                             //added to set timer even though might be the only one
+				CPU_busy = true;
+			}
+		}
+
+		roundRobinTimer--;
+		//otherwise if there is still round robin
+		bool contextSwitch = false;
+		if(roundRobin)
+		{
+			//std::cout << "\nRound robin is false at end";
+			//roundRobinTimer--;
+			if (roundRobinTimer == 0)
+			{
+				contextSwitch = true;
+				std::cout << runningProcess.head->processNumber << "  " << i << " S\n";
+				runningProcess.addProcessToTail(runningProcess.removeHeadProcess());
+				runningProcess.tail->running = false;
+				runningProcess.head->running = true;
+				roundRobinTimer = timeQuantum;
+			}
+		}
+		//increment turnaround, waiting if needed, decrement time left.
+		incrementTurnaroundAndWaitTime(readyQueue, runningProcess);
+
+		if(runningProcess.head != NULL && runningProcess.head->timeLeft == 0)
+		{
+			std::cout << runningProcess.head->processNumber << "  " << i << " 0\n";
+			terminatedQueue.addProcessToTail(runningProcess.removeHeadProcess());
+			terminatedQueue.tail->running = false;
+		}
+		else if (runningProcess.head != NULL && !contextSwitch)
+			std::cout << runningProcess.head->processNumber << "  " << i << " 1\n";
+		else if (!contextSwitch)
+			std::cout << "--  " << i  << " 2\n";
+
+		//check if a process terminated, if so maybe round robin is over
+		if(runningProcess.head == NULL || runningProcess.head->next == NULL)
+			roundRobin = false;
+
+		if(runningProcess.head == NULL )
+			CPU_busy = false;
+
+//		if(runningProcess.head != NULL)
+//		{
+//			std::cout << runningProcess.head->processNumber << "  " << i << "\n";
+//		}
+	}
+
+	terminatedQueue.toString();
+
+	//		Process *a = NULL;
+	//		a = readIncomingProcess(0);
+	//		if (a != NULL)
+	//			readyQueue.addProcess(a);
+	//
+	//		a = readIncomingProcess(0);
+	//		if (a != NULL)
+	//			readyQueue.addProcess(a);
+	//
+	//		a = readIncomingProcess(20);
+	//		if (a != NULL)
+	//			readyQueue.addProcess(a);
+	//
+	//		a = readIncomingProcess(25);
+	//		if (a != NULL)
+	//			readyQueue.addProcess(a);
+	//
+	//		a = readIncomingProcess(45);
+	//		if (a != NULL)
+	//			readyQueue.addProcess(a);
+	//
+	//		a = readIncomingProcess(55);
+	//		if (a != NULL)
+	//			readyQueue.addProcess(a);
+	//
+	//		a = readIncomingProcess(6);
+	//		if (a != NULL)
+	//			readyQueue.addProcess(a);
+	//
+	//		a = readIncomingProcess(4);
+	//		if (a != NULL)
+	//			readyQueue.addProcess(a);
+	//
+	//		std::cout << " READY QUEUE\n";
+	//		readyQueue.toString();
+	//
+	//		terminatedQueue.addProcess(readyQueue.removeHeadProcess());
+	//		terminatedQueue.addProcess(readyQueue.removeHeadProcess());
+	//		terminatedQueue.addProcess(readyQueue.removeHeadProcess());
+	//
+	//		std::cout << " READY QUEUE\n";
+	//		readyQueue.toString();
+	//		std::cout << " TERMINATED QUEUE\n";
+	//		terminatedQueue.toString();
+}

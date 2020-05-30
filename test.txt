@@ -1,0 +1,153 @@
+
+	 EXECUTION DETAILS 
+
+Process P1 admitted from file into ready Queue at time 0
+Process P2 admitted from file into ready Queue at time 0
+Process P1 started to execute at time 0
+Process P1 terminated execution at time 14
+Process P2 started to execute at time 15
+Process P3 admitted from file into ready Queue at time 20
+	**Context switch at time 20: Process preempted: P2, Process admitted: P3
+Process P3 started to execute at time 20
+Process P4 admitted from file into ready Queue at time 25
+	** Context switch at time 29: Process preempted: P3, Process admitted: P4
+Process P4 started to execute at time 29
+	** Context switch at time 39: Process preempted: P4, Process admitted: P3
+Process P3 started to execute at time 39
+Process P5 admitted from file into ready Queue at time 45
+	**Context switch at time 45: Process preempted: P3, Process admitted: P5
+Process P5 started to execute at time 45
+Process P5 terminated execution at time 49
+Process P3 started to execute at time 50
+Process P3 terminated execution at time 54
+Process P6 admitted from file into ready Queue at time 55
+	**Context switch at time 55: Process preempted: P4, Process admitted: P6
+Process P6 started to execute at time 55
+Process P6 terminated execution at time 69
+Process P4 started to execute at time 70
+Process P4 terminated execution at time 79
+Process P2 started to execute at time 80
+Process P2 terminated execution at time 94
+
+
+
+
+	PROCESSS EXECUTION REPORT
+---------------------------------------
+        PROCESS P1  P5  P3  P6  P4  P2  
+   WAITING TIME  0   0  15   0  35  75  
+TURNAROUND TIME 15   5  35  15  55  95  
+---------------------------------------
+
+
+FULL PROCESS REPORT
+-------------------------
+Process # ........ P1
+Arrival Time ..... 0
+Burst Time ....... 15
+Time Left ........ 0
+Priority ......... 8
+Waiting Time ..... 0
+Turnaround Time .. 15
+Running Status ... false
+
+Process # ........ P5
+Arrival Time ..... 45
+Burst Time ....... 5
+Time Left ........ 0
+Priority ......... 5
+Waiting Time ..... 0
+Turnaround Time .. 5
+Running Status ... false
+
+Process # ........ P3
+Arrival Time ..... 20
+Burst Time ....... 20
+Time Left ........ 0
+Priority ......... 4
+Waiting Time ..... 15
+Turnaround Time .. 35
+Running Status ... false
+
+Process # ........ P6
+Arrival Time ..... 55
+Burst Time ....... 15
+Time Left ........ 0
+Priority ......... 5
+Waiting Time ..... 0
+Turnaround Time .. 15
+Running Status ... false
+
+Process # ........ P4
+Arrival Time ..... 25
+Burst Time ....... 20
+Time Left ........ 0
+Priority ......... 4
+Waiting Time ..... 35
+Turnaround Time .. 55
+Running Status ... false
+
+Process # ........ P2
+Arrival Time ..... 0
+Burst Time ....... 20
+Time Left ........ 0
+Priority ......... 3
+Waiting Time ..... 75
+Turnaround Time .. 95
+Running Status ... false
+
+-------------------------
+
+
+			*** PROCESS EXECUTION TIMELINE ***
+
+--------------------------------------------------------------------------------------------------------
+P1 | P1 | P1 | P1 | P1 | P1 | P1 | P1 | P1 | P1 | P1 | P1 | P1 | P1 | P1 | P2 | P2 | P2 | P2 | P2 | P3 | 
+ 0 |  1 |  2 |  3 |  4 |  5 |  6 |  7 |  8 |  9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 
+
+P3 | P3 | P3 | P3 | P3 | P3 | P3 | P3 | P3 | P4 | P4 | P4 | P4 | P4 | P4 | P4 | P4 | P4 | P4 | P3 | 
+21 | 22 | 23 | 24 | 25 | 26 | 27 | 28 | 29 | 30 | 31 | 32 | 33 | 34 | 35 | 36 | 37 | 38 | 39 | 40 | 
+
+P3 | P3 | P3 | P3 | P5 | P5 | P5 | P5 | P5 | P3 | P3 | P3 | P3 | P3 | P6 | P6 | P6 | P6 | P6 | P6 | 
+41 | 42 | 43 | 44 | 45 | 46 | 47 | 48 | 49 | 50 | 51 | 52 | 53 | 54 | 55 | 56 | 57 | 58 | 59 | 60 | 
+
+P6 | P6 | P6 | P6 | P6 | P6 | P6 | P6 | P6 | P4 | P4 | P4 | P4 | P4 | P4 | P4 | P4 | P4 | P4 | P2 | 
+61 | 62 | 63 | 64 | 65 | 66 | 67 | 68 | 69 | 70 | 71 | 72 | 73 | 74 | 75 | 76 | 77 | 78 | 79 | 80 | 
+
+P2 | P2 | P2 | P2 | P2 | P2 | P2 | P2 | P2 | P2 | P2 | P2 | P2 | P2 | -- | -- | -- | -- | -- | -- | 
+81 | 82 | 83 | 84 | 85 | 86 | 87 | 88 | 89 | 90 | 91 | 92 | 93 | 94 | 95 | 96 | 97 | 98 | 99 | 100 | 
+
+--------------------------------------------------------------------------------------------------------
+
+
+
+***   HERE IS SOME HELPFUL INFORMATION   ***
+
+
+* This program defines a priority based preemptive scheduler where:
+   - Process with highest integer value has highest priority.
+   - Round Robin algorithm for processes with same priority.
+   - Round Robin has time quantum 10 time units.
+   - Default program output prints execution details, waiting and turnaround times for processes.
+
+		 ** USAGE **
+
+* The program needs a tab separated .txt file as argument 1 in the following format for each line
+   processnumber as (String)    tab   priority as (int)   tab   burstTime as (int)   tab   arrivalTime as (int)   newline
+   i.e.: P12\t8\t18\t3\n indicates Process 12 has priority 8, burst time of 18 time units and arrives at time unit 3.
+
+		 ** OPTIONAL ARGUMENTS **
+
+   -help      -> Prints this message to console.
+   -timeline  -> Prints a timeline for the process execution.
+   -report    -> Prints a detailed report of all processes executed
+   # These optional arguments can be passed in any order AFTER the input text file argument
+   # The parameter -help at any position overrides all other parameters.   # Any non argument not listed here will cause this message to be printed
+
+		 ** COMPILATION AND EXECUTION **
+
+   g++ -c vagner.c          -> compiles the source file into object file
+   g++ -o app.exe vagner.o  ->  links object file to executable
+   ./app.exe {inputFile.txt} [-help] [-timeline] [-report]  -> runs program with data from inputFile.txt and optional arguments if desired 
+
+   -Vagner
